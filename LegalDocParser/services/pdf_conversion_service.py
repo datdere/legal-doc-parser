@@ -22,7 +22,12 @@ class PdfConversionService:
     def update_settings(self, settings: AppSettings) -> None:
         self._settings = settings
 
-    def convert(self, pdf_path: str, options: ConversionOptions) -> ConversionResult:
+    def convert(
+        self,
+        pdf_path: str,
+        options: ConversionOptions,
+        cancel_check: Optional[Callable[[], bool]] = None,
+    ) -> ConversionResult:
         if not os.path.isfile(pdf_path):
             return ConversionResult(
                 success=False,
@@ -35,8 +40,16 @@ class PdfConversionService:
         proc = run_process(
             [self._settings.python_path] + args,
             timeout_seconds=self._settings.process_timeout_seconds,
+            cancel_check=cancel_check,
         )
         duration = time.monotonic() - start
+
+        if proc.exit_code == -2:
+            return ConversionResult(
+                success=False,
+                error_message="사용자에 의해 취소되었습니다.",
+                duration_seconds=duration,
+            )
 
         if proc.exit_code != 0:
             return ConversionResult(
@@ -106,7 +119,7 @@ class PdfConversionService:
 
         with ThreadPoolExecutor(max_workers=self._settings.batch_concurrency) as executor:
             futures = {
-                executor.submit(self.convert, path, options): path
+                executor.submit(self.convert, path, options, cancel_check): path
                 for path in pdf_paths
             }
             completed = 0
@@ -128,13 +141,46 @@ class PdfConversionService:
         return results
 
     def validate_python(self) -> tuple[bool, str]:
+        errors: list[str] = []
+
+        # 1. Python 실행 가능 여부
         proc = run_process(
-            [self._settings.python_path, "-c", "import opendataloader_pdf; print('OK')"],
-            timeout_seconds=30,
+            [self._settings.python_path, "--version"],
+            timeout_seconds=10,
         )
-        if proc.exit_code == 0 and "OK" in proc.stdout:
-            return True, "Python 환경이 정상입니다."
-        return False, proc.stderr or "opendataloader_pdf 모듈을 찾을 수 없습니다."
+        if proc.exit_code != 0:
+            return False, f"Python을 실행할 수 없습니다: {proc.stderr}"
+        python_version = (proc.stdout or proc.stderr).strip()
+
+        # 2. opendataloader_pdf 모듈 import + 버전 확인
+        proc = run_process(
+            [self._settings.python_path, "-c",
+             "import opendataloader_pdf; print(getattr(opendataloader_pdf, '__version__', 'unknown'))"],
+            timeout_seconds=15,
+        )
+        if proc.exit_code != 0:
+            return False, f"opendataloader_pdf 모듈을 찾을 수 없습니다.\npip install opendataloader-pdf 를 실행하세요.\n\n{proc.stderr}"
+        module_version = proc.stdout.strip()
+
+        # 3. 변환 스크립트 파일 존재 확인
+        if not os.path.isfile(SCRIPT_PATH):
+            return False, f"변환 스크립트를 찾을 수 없습니다: {SCRIPT_PATH}"
+
+        # 4. 변환 스크립트 구문 검사
+        proc = run_process(
+            [self._settings.python_path, "-c",
+             f"import py_compile; py_compile.compile(r'{SCRIPT_PATH}', doraise=True); print('OK')"],
+            timeout_seconds=10,
+        )
+        if proc.exit_code != 0:
+            return False, f"변환 스크립트에 구문 오류가 있습니다:\n{proc.stderr}"
+
+        return True, (
+            f"Python 환경이 정상입니다.\n"
+            f"  Python: {python_version}\n"
+            f"  opendataloader_pdf: {module_version}\n"
+            f"  변환 스크립트: {SCRIPT_PATH}"
+        )
 
     def _build_arguments(self, pdf_path: str, options: ConversionOptions) -> list[str]:
         args = [
