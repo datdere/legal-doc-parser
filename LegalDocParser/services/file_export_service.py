@@ -23,9 +23,7 @@ class FileExportService:
             if parent:
                 os.makedirs(parent, exist_ok=True)
 
-            content = result.content
-            if fmt == OutputFormat.HTML:
-                content = render_markdown_to_html(content)
+            content = self.render_for_export(result.content, fmt)
 
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(content)
@@ -66,10 +64,22 @@ class FileExportService:
         return fmt.extension
 
     @staticmethod
+    def render_for_export(content: str, fmt: OutputFormat) -> str:
+        """변환 결과를 저장용으로 렌더링. 포맷별 의미:
+        - MARKDOWN: 변환 결과가 markdown이므로 그대로 저장
+        - HTML: 변환 결과가 markdown이므로 HTML로 변환하여 저장
+        - JSON/TEXT: 그대로 저장
+        """
+        if fmt == OutputFormat.HTML:
+            return render_markdown_to_html(content)
+        return content
+
+    @staticmethod
     def render_for_display(content: str, fmt: OutputFormat) -> str:
+        """변환 결과를 뷰어 미리보기용으로 렌더링."""
         if fmt == OutputFormat.MARKDOWN:
             return render_markdown_to_html(content)
         elif fmt == OutputFormat.HTML:
-            return content
+            return render_markdown_to_html(content)
         else:
             return render_plain_text_to_html(content)

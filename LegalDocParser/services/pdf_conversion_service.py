@@ -9,7 +9,7 @@ from helpers.process_helper import run_process
 from models.app_settings import AppSettings
 from models.conversion_options import ConversionOptions
 from models.conversion_result import ConversionResult
-from models.enums import OcrLanguage, TableExtractionMode
+from models.enums import OcrLanguage
 
 
 SCRIPT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "convert_pdf.py")
@@ -141,8 +141,6 @@ class PdfConversionService:
         return results
 
     def validate_python(self) -> tuple[bool, str]:
-        errors: list[str] = []
-
         # 1. Python 실행 가능 여부
         proc = run_process(
             [self._settings.python_path, "--version"],
@@ -193,8 +191,8 @@ class PdfConversionService:
             args.extend(["--ocr-lang", options.ocr_lang.value])
         if options.use_tagged_pdf:
             args.append("--tagged-pdf")
-        if options.enable_ai_safety_filter:
-            args.append("--ai-filter")
+        # AI 안전 필터는 서비스 계층(ai_safety_filter.filter_content)에서 적용.
+        # 스크립트의 --ai-filter는 중복이므로 전달하지 않음.
         if options.page_range:
             args.extend(["--pages", options.page_range])
         return args

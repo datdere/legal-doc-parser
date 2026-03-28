@@ -42,7 +42,9 @@ class SettingsService:
         if settings is not None:
             self._settings = settings
         try:
-            os.makedirs(os.path.dirname(self._settings_path), exist_ok=True)
+            parent = os.path.dirname(self._settings_path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
             with open(self._settings_path, "w", encoding="utf-8") as f:
                 json.dump(self._settings.to_dict(), f, indent=4, ensure_ascii=False)
             return True

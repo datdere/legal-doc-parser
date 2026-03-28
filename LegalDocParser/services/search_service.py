@@ -45,12 +45,17 @@ class SearchService:
         self, compiled: re.Pattern, lines: list[str]
     ) -> list[SearchResult]:
         results: list[SearchResult] = []
+        cancelled = threading.Event()
         container: dict = {"done": False, "error": None}
 
         def _do_search():
             try:
                 for line_number, line in enumerate(lines, start=1):
+                    if cancelled.is_set():
+                        return
                     for match in compiled.finditer(line):
+                        if cancelled.is_set():
+                            return
                         results.append(SearchResult(
                             matched_text=match.group(),
                             line_number=line_number,
@@ -67,6 +72,7 @@ class SearchService:
         thread.join(timeout=_REGEX_TIMEOUT_SECONDS)
 
         if not container["done"] and container["error"] is None:
+            cancelled.set()
             raise _RegexTimeoutError(
                 f"정규식 검색이 {_REGEX_TIMEOUT_SECONDS}초 제한을 초과했습니다."
             )

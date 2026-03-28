@@ -50,9 +50,15 @@ def _run_simple(
         )
     except subprocess.TimeoutExpired as e:
         duration = time.monotonic() - start
+        if isinstance(e.stdout, str):
+            stdout = e.stdout or ""
+        elif isinstance(e.stdout, bytes):
+            stdout = e.stdout.decode(errors="replace")
+        else:
+            stdout = ""
         return ProcessResult(
             exit_code=-1,
-            stdout=e.stdout or "" if isinstance(e.stdout, str) else (e.stdout or b"").decode(errors="replace"),
+            stdout=stdout,
             stderr=f"프로세스 시간 초과 ({timeout_seconds}초)",
             duration_seconds=duration,
         )
