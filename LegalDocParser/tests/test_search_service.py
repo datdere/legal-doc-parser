@@ -76,3 +76,19 @@ def test_multiple_matches_per_line():
     assert len(results) == 2
     assert results[0].column_start == 0
     assert results[1].column_start == 8
+
+
+def test_regex_timeout_returns_partial():
+    """Catastrophic regex backtracking should not hang indefinitely."""
+    import services.search_service as mod
+    original = mod._REGEX_TIMEOUT_SECONDS
+    mod._REGEX_TIMEOUT_SECONDS = 1
+    try:
+        svc = setup_service()
+        # This pattern + input can cause exponential backtracking
+        evil_input = "a" * 30 + "!"
+        results = svc.search(evil_input, r"(a+)+b", use_regex=True)
+        # Should return (possibly empty) without hanging
+        assert isinstance(results, list)
+    finally:
+        mod._REGEX_TIMEOUT_SECONDS = original
