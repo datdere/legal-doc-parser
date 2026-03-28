@@ -48,6 +48,7 @@ class MainWindow:
         menubar = tk.Menu(self._root)
         self._root.config(menu=menubar)
 
+        # File menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="파일", menu=file_menu)
         file_menu.add_command(label="PDF 파일 열기...", command=self._open_files, accelerator="Ctrl+O")
@@ -60,12 +61,14 @@ class MainWindow:
         file_menu.add_separator()
         file_menu.add_command(label="종료", command=self._root.quit)
 
+        # Convert menu
         convert_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="변환", menu=convert_menu)
         convert_menu.add_command(label="선택 파일 변환", command=self._convert_selected, accelerator="F5")
         convert_menu.add_command(label="전체 배치 변환", command=self._convert_batch, accelerator="F6")
         convert_menu.add_separator()
 
+        # Format submenu
         self._format_var = tk.StringVar(value=self._settings_service.settings.default_format.value)
         format_menu = tk.Menu(convert_menu, tearoff=0)
         convert_menu.add_cascade(label="출력 형식", menu=format_menu)
@@ -75,12 +78,14 @@ class MainWindow:
                 command=self._on_format_changed,
             )
 
+        # Table mode submenu
         self._table_var = tk.StringVar(value=self._settings_service.settings.default_table_mode.value)
         table_menu = tk.Menu(convert_menu, tearoff=0)
         convert_menu.add_cascade(label="테이블 추출 모드", menu=table_menu)
         for mode in TableExtractionMode:
             table_menu.add_radiobutton(label=mode.value.capitalize(), value=mode.value, variable=self._table_var)
 
+        # OCR submenu
         self._ocr_var = tk.StringVar(value=self._settings_service.settings.default_ocr_lang.value)
         ocr_menu = tk.Menu(convert_menu, tearoff=0)
         convert_menu.add_cascade(label="OCR 언어", menu=ocr_menu)
@@ -88,6 +93,7 @@ class MainWindow:
         for lang in OcrLanguage:
             ocr_menu.add_radiobutton(label=ocr_labels[lang.value], value=lang.value, variable=self._ocr_var)
 
+        # Settings menu
         settings_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="설정", menu=settings_menu)
         settings_menu.add_command(label="환경 설정...", command=self._open_settings)
@@ -95,6 +101,7 @@ class MainWindow:
         settings_menu.add_separator()
         settings_menu.add_command(label="정보", command=self._show_about)
 
+        # Keyboard shortcuts
         self._root.bind("<Control-o>", lambda e: self._open_files())
         self._root.bind("<Control-s>", lambda e: self._save_result())
         self._root.bind("<F5>", lambda e: self._convert_selected())
@@ -104,9 +111,11 @@ class MainWindow:
         main_paned = ttk.PanedWindow(self._root, orient=tk.HORIZONTAL)
         main_paned.pack(fill=tk.BOTH, expand=True, padx=4, pady=4)
 
+        # Left: file list
         self._file_list = FileListPanel(main_paned)
         main_paned.add(self._file_list, weight=1)
 
+        # Right: viewer + bottom
         right_paned = ttk.PanedWindow(main_paned, orient=tk.VERTICAL)
         main_paned.add(right_paned, weight=3)
 
@@ -116,8 +125,10 @@ class MainWindow:
         self._bottom_panel = BottomTabPanel(right_paned)
         right_paned.add(self._bottom_panel, weight=1)
 
+        # Progress panel (hidden by default)
         self._progress_panel = ConversionProgressPanel(self._root)
 
+        # Status bar
         self._status_var = tk.StringVar(value="준비")
         status_bar = ttk.Label(self._root, textvariable=self._status_var, relief=tk.SUNKEN, anchor=tk.W)
         status_bar.pack(fill=tk.X, side=tk.BOTTOM, padx=4, pady=2)
@@ -133,6 +144,8 @@ class MainWindow:
 
     def _set_status(self, text: str) -> None:
         self._status_var.set(text)
+
+    # --- File actions ---
 
     def _open_files(self) -> None:
         paths = filedialog.askopenfilenames(
@@ -197,6 +210,8 @@ class MainWindow:
             self._root.clipboard_clear()
             self._root.clipboard_append(content)
             self._log("클립보드에 복사되었습니다.", "success")
+
+    # --- Conversion actions ---
 
     def _get_conversion_options(self) -> ConversionOptions:
         settings = self._settings_service.settings
@@ -275,6 +290,8 @@ class MainWindow:
         self._log(f"배치 변환 완료: {ok_count}/{len(results)} 성공", "success")
         self._set_status("준비")
 
+    # --- Document selection ---
+
     def _on_document_selected(self, doc: DocumentInfo) -> None:
         self._current_document = doc
         info_lines = [
@@ -293,6 +310,8 @@ class MainWindow:
         else:
             self._viewer.clear()
             self._viewer.show_pdf_info("\n".join(info_lines))
+
+    # --- Search ---
 
     def _on_search(self, pattern: str, use_regex: bool, case_sensitive: bool) -> None:
         content = self._viewer.get_raw_content()
@@ -315,6 +334,8 @@ class MainWindow:
                     self._current_document.last_conversion.content,
                     self._current_format,
                 )
+
+    # --- Settings ---
 
     def _open_settings(self) -> None:
         dialog = SettingsDialog(self._root, self._settings_service.settings)

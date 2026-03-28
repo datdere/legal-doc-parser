@@ -28,6 +28,7 @@ class SettingsDialog(tk.Toplevel):
         main = ttk.Frame(self, padding=16)
         main.pack(fill=tk.BOTH, expand=True)
 
+        # Python path
         row = 0
         ttk.Label(main, text="Python 경로:").grid(row=row, column=0, sticky=tk.W, pady=4)
         python_frame = ttk.Frame(main)
@@ -37,6 +38,7 @@ class SettingsDialog(tk.Toplevel):
         ttk.Button(python_frame, text="찾기", width=5,
                    command=self._browse_python).pack(side=tk.RIGHT, padx=(4, 0))
 
+        # Output directory
         row += 1
         ttk.Label(main, text="출력 디렉토리:").grid(row=row, column=0, sticky=tk.W, pady=4)
         dir_frame = ttk.Frame(main)
@@ -46,6 +48,7 @@ class SettingsDialog(tk.Toplevel):
         ttk.Button(dir_frame, text="찾기", width=5,
                    command=self._browse_dir).pack(side=tk.RIGHT, padx=(4, 0))
 
+        # Default format
         row += 1
         ttk.Label(main, text="기본 출력 형식:").grid(row=row, column=0, sticky=tk.W, pady=4)
         self._format_var = tk.StringVar()
@@ -53,6 +56,7 @@ class SettingsDialog(tk.Toplevel):
         fmt_combo["values"] = [f.value for f in OutputFormat]
         fmt_combo.grid(row=row, column=1, sticky=tk.W, pady=4)
 
+        # Default table mode
         row += 1
         ttk.Label(main, text="기본 테이블 모드:").grid(row=row, column=0, sticky=tk.W, pady=4)
         self._table_var = tk.StringVar()
@@ -60,6 +64,7 @@ class SettingsDialog(tk.Toplevel):
         table_combo["values"] = [t.value for t in TableExtractionMode]
         table_combo.grid(row=row, column=1, sticky=tk.W, pady=4)
 
+        # Default OCR language
         row += 1
         ttk.Label(main, text="기본 OCR 언어:").grid(row=row, column=0, sticky=tk.W, pady=4)
         self._ocr_var = tk.StringVar()
@@ -67,21 +72,25 @@ class SettingsDialog(tk.Toplevel):
         ocr_combo["values"] = [o.value for o in OcrLanguage]
         ocr_combo.grid(row=row, column=1, sticky=tk.W, pady=4)
 
+        # AI safety filter
         row += 1
         self._filter_var = tk.BooleanVar()
         ttk.Checkbutton(main, text="AI 안전 필터 활성화", variable=self._filter_var).grid(
             row=row, column=0, columnspan=2, sticky=tk.W, pady=4)
 
+        # Batch concurrency
         row += 1
         ttk.Label(main, text="배치 동시 처리 수:").grid(row=row, column=0, sticky=tk.W, pady=4)
         self._concurrency_spin = ttk.Spinbox(main, from_=1, to=10, width=5)
         self._concurrency_spin.grid(row=row, column=1, sticky=tk.W, pady=4)
 
+        # Process timeout
         row += 1
         ttk.Label(main, text="프로세스 시간 제한 (초):").grid(row=row, column=0, sticky=tk.W, pady=4)
         self._timeout_spin = ttk.Spinbox(main, from_=30, to=3600, width=8)
         self._timeout_spin.grid(row=row, column=1, sticky=tk.W, pady=4)
 
+        # Hybrid server URL
         row += 1
         ttk.Label(main, text="하이브리드 서버 URL:").grid(row=row, column=0, sticky=tk.W, pady=4)
         self._server_entry = ttk.Entry(main, width=30)
@@ -89,6 +98,7 @@ class SettingsDialog(tk.Toplevel):
 
         main.columnconfigure(1, weight=1)
 
+        # Buttons
         btn_frame = ttk.Frame(self, padding=(16, 0, 16, 16))
         btn_frame.pack(fill=tk.X)
 
