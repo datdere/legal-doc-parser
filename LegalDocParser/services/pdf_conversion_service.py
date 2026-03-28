@@ -47,10 +47,17 @@ class PdfConversionService:
 
         try:
             output = json.loads(proc.stdout)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             return ConversionResult(
                 success=False,
                 error_message="Python 스크립트의 출력을 파싱할 수 없습니다.",
+                duration_seconds=duration,
+            )
+
+        if not isinstance(output, dict):
+            return ConversionResult(
+                success=False,
+                error_message="변환 출력이 올바른 JSON 객체가 아닙니다.",
                 duration_seconds=duration,
             )
 
@@ -61,8 +68,16 @@ class PdfConversionService:
                 duration_seconds=duration,
             )
 
-        content = output.get("content", "")
-        warnings = output.get("warnings", [])
+        content = output.get("content")
+        if not isinstance(content, str):
+            return ConversionResult(
+                success=False,
+                error_message="변환 결과에 유효한 content 필드가 없습니다.",
+                duration_seconds=duration,
+            )
+
+        raw_warnings = output.get("warnings", [])
+        warnings = [str(w) for w in raw_warnings] if isinstance(raw_warnings, list) else []
         ai_warnings: list[str] = []
 
         if options.enable_ai_safety_filter:

@@ -1,9 +1,11 @@
+import logging
 import os
-from typing import Optional
 
 from helpers.markdown_renderer import render_markdown_to_html, render_plain_text_to_html
 from models.conversion_result import ConversionResult
 from models.enums import OutputFormat
+
+logger = logging.getLogger(__name__)
 
 
 class FileExportService:
@@ -16,15 +18,21 @@ class FileExportService:
         if not result.success or not result.content:
             return False
 
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        try:
+            parent = os.path.dirname(output_path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
 
-        content = result.content
-        if fmt == OutputFormat.HTML:
-            content = render_markdown_to_html(content)
+            content = result.content
+            if fmt == OutputFormat.HTML:
+                content = render_markdown_to_html(content)
 
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        return True
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        except OSError as e:
+            logger.error("파일 저장 실패 (%s): %s", output_path, e)
+            return False
 
     def save_batch(
         self,
