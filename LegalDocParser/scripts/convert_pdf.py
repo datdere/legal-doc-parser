@@ -56,7 +56,7 @@ def convert_pdf(
             kwargs = {
                 "input_path": input_path,
                 "output_dir": tmp_dir,
-                "output_format": output_format,
+                "format": output_format,
             }
 
             if table_mode == "hybrid":
