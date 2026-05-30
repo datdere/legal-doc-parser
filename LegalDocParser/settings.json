@@ -1,0 +1,11 @@
+{
+    "python_path": "python",
+    "default_output_dir": "",
+    "default_format": "markdown",
+    "default_table_mode": "local",
+    "default_ocr_lang": "none",
+    "default_ai_safety_filter": true,
+    "batch_concurrency": 3,
+    "process_timeout_seconds": 300,
+    "hybrid_server_url": "http://localhost:5002"
+}
